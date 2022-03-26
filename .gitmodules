@@ -1,0 +1,6 @@
+[submodule "deps/fdk-aac"]
+	path = deps/fdk-aac
+	url = https://github.com/mstorsjo/fdk-aac
+[submodule "deps/mp4v2"]
+	path = deps/mp4v2
+	url = https://github.com/enzo1982/mp4v2
