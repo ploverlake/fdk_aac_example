@@ -14,12 +14,13 @@ if [ ! -x "$CMAKE_PROG" ]; then
   exit 1
 fi
 
-cd $PROG_DIR
-cmake_cmd="$CMAKE_PROG -H. -B."
+cd "$PROG_DIR"
+cmake_cmd="$CMAKE_PROG -H. -Bbuild"
 eval "$cmake_cmd"
 if [ $? -ne 0 ]; then
   echo "Error: cmake failed"
   exit 1
 fi
 
+cd build
 $MAKE_PROG VERBOSE=1

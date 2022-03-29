@@ -2,7 +2,7 @@
 PROG_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 && pwd -P)"
 PROG_NAME="$(basename "$0")"
 
-ENC_PROG="$PROG_DIR/example/aac_m4a_enc"
+ENC_PROG="$PROG_DIR/build/example/aac_m4a_enc"
 if [ ! -x "$ENC_PROG" ]; then
   echo "Please build aac_m4a_enc first ..."
   exit 1

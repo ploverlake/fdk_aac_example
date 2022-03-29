@@ -48,10 +48,7 @@ set(FDK_AAC_INSTALL_PKGCONFIG_MODULE
     OFF
     CACHE BOOL "Do not install pkg-config .pc file" FORCE
 )
-add_subdirectory(
-  "${CMAKE_CURRENT_SOURCE_DIR}/deps/fdk-aac"
-  "${CMAKE_CURRENT_SOURCE_DIR}/deps/fdk-aac/build"
-)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/fdk-aac")
 
 # mp4v2
 set(BUILD_SHARED
@@ -62,14 +59,7 @@ set(BUILD_UTILS
     OFF
     CACHE BOOL "Do not build MP4v2 auxiliary tools" FORCE
 )
-add_subdirectory(
-  "${CMAKE_CURRENT_SOURCE_DIR}/deps/mp4v2"
-  "${CMAKE_CURRENT_SOURCE_DIR}/deps/mp4v2/build"
-)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/mp4v2")
 
-add_subdirectory(
-  "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/src/build"
-)
-add_subdirectory(
-  "${CMAKE_CURRENT_SOURCE_DIR}/example" "${CMAKE_CURRENT_SOURCE_DIR}/example"
-)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/example")
