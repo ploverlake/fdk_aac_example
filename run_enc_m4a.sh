@@ -71,7 +71,7 @@ echo "Bit rate list: ${bitrate_list[*]}"
 
 for encode_bitrate in "${bitrate_list[@]}"; do
   echo ""
-  enc_cmd="$ENC_PROG -t $aac_aot -r $encode_bitrate $wav_file $wav_file_dir/${wav_file_name}.${aac_aot_name}.${encode_bitrate}.m4a"
+  enc_cmd="$ENC_PROG -a $aac_aot -b $encode_bitrate $wav_file $wav_file_dir/${wav_file_name}.${aac_aot_name}.${encode_bitrate}.m4a"
   echo "$enc_cmd"
   eval "$enc_cmd"
 done

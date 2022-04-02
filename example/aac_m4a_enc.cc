@@ -4,21 +4,13 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <iostream>
 #include <memory>
+#include <string>
 #include "aac_encoder.h"
+#include "args.hxx"
 #include "m4a_writer.h"
 #include "wav_reader.h"
-
-static void Usage(const char* name) {
-  printf("%s [-h] [-t aot] [-r bitrate] in.wav out.m4a\n", name);
-  printf("Only support 1 or 2 channel(s)\n");
-  printf("  -h  Show usage and exit\n");
-  printf("  -t  Encode AOT(LC: %d, HE: %d, HEv2: %d, LD: %d, ELD: %d)\n",
-         AAC_COMMON_AOT_LC, AAC_COMMON_AOT_HE, AAC_COMMON_AOT_HEv2,
-         AAC_COMMON_AOT_LD, AAC_COMMON_AOT_ELD);
-  printf("  -r  Encode bitrate\n");
-}
 
 static void PrintEncoderInfo(const char* infile,
                              const char* outfile,
@@ -42,15 +34,6 @@ static void PrintEncoderInfo(const char* infile,
     }
   }
   printf("}\n");
-}
-
-static bool IsAotValid(int32_t aot) {
-  for (int32_t i = 0; i < aac_enc_aots_size; ++i) {
-    if (aac_enc_aots[i].aot == aot) {
-      return true;
-    }
-  }
-  return false;
 }
 
 static int32_t EncodeM4a(const char* infile,
@@ -128,43 +111,62 @@ static int32_t EncodeM4a(const char* infile,
 }
 
 int main(int argc, char* argv[]) {
-  int32_t aot = -1;
-  int32_t bitrate = -1;
-  int32_t ch;
-  while ((ch = getopt(argc, argv, "hasvt:r:")) != -1) {
-    switch (ch) {
-      case 't':
-        aot = atoi(optarg);
-        break;
-      case 'r':
-        bitrate = atoi(optarg);
-        break;
-      case 'h':
-      case '?':
-      default:
-        Usage(argv[0]);
-        return -1;
+  args::ArgumentParser parser(
+      "Encode AAC with RAW format to M4A file.\nOnly support 1 or 2 "
+      "channel(s)");
+  parser.helpParams.progindent = 0;
+  parser.helpParams.addDefault = true;
+  parser.helpParams.addChoices = true;
+  parser.helpParams.useValueNameOnce = true;
+
+  args::Positional<std::string> wav_file(parser, "Input", "WAV file",
+                                         args::Options::Required);
+  args::Positional<std::string> m4a_file(parser, "Output", "M4A file",
+                                         args::Options::Required);
+  args::HelpFlag help(parser, "help", "Show usage and exit", {'h', "help"});
+
+  args::MapFlag<std::string, int> aot(
+      parser, "AOT", "Audio Object Type", {'a', "aot"},
+      {{std::to_string(AAC_COMMON_AOT_LC), AAC_COMMON_AOT_LC},
+       {std::to_string(AAC_COMMON_AOT_HE), AAC_COMMON_AOT_HE},
+       {std::to_string(AAC_COMMON_AOT_HEv2), AAC_COMMON_AOT_HEv2},
+       {std::to_string(AAC_COMMON_AOT_LD), AAC_COMMON_AOT_LD},
+       {std::to_string(AAC_COMMON_AOT_ELD), AAC_COMMON_AOT_ELD}},
+      AAC_COMMON_AOT_LC);
+  aot.HelpChoices({std::to_string(AAC_COMMON_AOT_LC) + "(LC)",
+                   std::to_string(AAC_COMMON_AOT_HE) + "(HE)",
+                   std::to_string(AAC_COMMON_AOT_HEv2) + "(HEv2)",
+                   std::to_string(AAC_COMMON_AOT_LD) + "(LD)",
+                   std::to_string(AAC_COMMON_AOT_ELD) + "(ELD)"});
+  aot.HelpDefault(std::to_string(AAC_COMMON_AOT_LC));
+
+  args::ValueFlag<int32_t> bitrate(parser, "bitrate", "Encode bitrate(bps)",
+                                   {'b', "bitrate"}, 64000);
+
+  bool ret = parser.ParseCLI(argc, argv);
+  if (!ret) {
+    if (parser.GetError() != args::Error::None) {
+      std::cout << parser.GetErrorMsg() << std::endl << std::endl;
     }
-  }
-  if (argc - optind < 2) {
-    Usage(argv[0]);
+    std::cout << parser.Help();
     return -1;
-  }
-  const char* infile = argv[optind];
-  const char* outfile = argv[optind + 1];
-
-  if (!IsAotValid(aot)) {
-    printf("Invalid AOT: %d\n\n", aot);
-    Usage(argv[0]);
-    return -1;
+  } else if (help.Get()) {
+    std::cout << parser.Help();
+    return 0;
   }
 
-  if (bitrate <= 0) {
-    printf("Invalid bitrate: %d\n", bitrate);
-    Usage(argv[0]);
+  if (wav_file.GetError() != args::Error::None) {
+    std::cout << wav_file.GetErrorMsg() << std::endl;
+    return -1;
+  } else if (m4a_file.GetError() != args::Error::None) {
+    std::cout << m4a_file.GetErrorMsg() << std::endl;
+    return -1;
+  } else if (aot.GetError() != args::Error::None) {
+    std::cout << aot.GetErrorMsg() << std::endl;
     return -1;
   }
 
-  EncodeM4a(infile, outfile, aot, bitrate);
+  EncodeM4a(wav_file.Get().c_str(), m4a_file.Get().c_str(), aot.Get(),
+            bitrate.Get());
   return 0;
 }

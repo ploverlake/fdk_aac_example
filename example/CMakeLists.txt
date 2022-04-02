@@ -5,9 +5,10 @@ set(EXTRA_INCLUDE_DIRS
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/wav"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/aac"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/m4a"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../deps/args"
 )
 
-set(EXTRA_LINK_LIBS audio_coding fdk-aac mp4v2)
+set(EXTRA_LINK_LIBS audio_coding args fdk-aac mp4v2)
 
 # aac_adts_enc
 set(AAC_ADTS_ENC_EXAMPLE aac_adts_enc)

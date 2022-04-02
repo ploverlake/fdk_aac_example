@@ -20,9 +20,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 # Global compiling flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fvisibility=hidden")
+set(CMAKE_C_FLAGS
+    "${CMAKE_C_FLAGS} -DARGS_NOEXCEPT=1 -Wall -fvisibility=hidden"
+)
 set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -Wall -fno-rtti -fvisibility=hidden -fvisibility-inlines-hidden"
+    "${CMAKE_CXX_FLAGS} -DARGS_NOEXCEPT=1 -Wall -fno-rtti -fvisibility=hidden -fvisibility-inlines-hidden"
 )
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG=1")
@@ -60,6 +62,17 @@ set(BUILD_UTILS
     CACHE BOOL "Do not build MP4v2 auxiliary tools" FORCE
 )
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/mp4v2")
+
+# args
+set(ARGS_BUILD_EXAMPLE
+    OFF
+    CACHE BOOL "Do not build example" FORCE
+)
+set(ARGS_BUILD_UNITTESTS
+    OFF
+    CACHE BOOL "Do not build unittests" FORCE
+)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/args")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/example")

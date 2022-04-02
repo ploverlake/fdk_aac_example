@@ -4,30 +4,20 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <iostream>
 #include <memory>
+#include <string>
 #include "aac_adts_reader.h"
 #include "aac_common.h"
 #include "aac_decoder.h"
+#include "args.hxx"
 #include "wav_writer.h"
 
 #define AAC_ADTS_HEADER_SIZE 7
 
-// 44100, stereo
-// UCHAR eld_conf[] = {0xF8, 0xE8, 0x50, 0x00};
-// UCHAR *conf[] = {eld_conf};
-// UINT conf_size = sizeof(eld_conf);
-
-static void usage(const char* name) {
-  printf("%s [-h] [-e enc_delay] [-d] in.aac out.wav\n", name);
-  printf("Only support ADTS format\n");
-  printf("  -h  Show usage and exit\n");
-  printf("  -d  Encode delay(samples/channel) to prune\n");
-}
-
 static void PrintDecoderInfo(const char* infile,
                              const char* outfile,
-                             int32_t enc_delay,
+                             int32_t encoder_delay,
                              AacDecoderInfo& aac_decoder_info) {
   print_aac_lib_info();
   printf("Input: '%s', %d Hz, %d ch(s), %d bps, %s\n", infile,
@@ -39,12 +29,13 @@ static void PrintDecoderInfo(const char* infile,
   printf("Output delay: %u samples/channel\n", aac_decoder_info.output_delay);
   printf("Aac sample rate: %d, aac channels: %d\n",
          aac_decoder_info.aac_sample_rate, aac_decoder_info.aac_channels);
-  printf("Presupposed enc delay to prune: %d samples/channel\n", enc_delay);
+  printf("Presupposed encoder delay to prune: %d samples/channel\n",
+         encoder_delay);
 }
 
 static int32_t DecodeAacAdts(const char* infile,
                              const char* outfile,
-                             const int32_t enc_delay) {
+                             const int32_t encoder_delay) {
   auto aac_adts_reader = std::make_unique<AacAdtsReader>();
   int32_t ret = aac_adts_reader->Open(infile);
   if (ret) {
@@ -83,7 +74,6 @@ static int32_t DecodeAacAdts(const char* infile,
       break;
     } else if (out_buf_size == 0) {
       // not enough bits
-      printf("hhhh\n");
       continue;
     }
 
@@ -94,7 +84,7 @@ static int32_t DecodeAacAdts(const char* infile,
         printf("Get info of aac decoder failed\n");
         break;
       }
-      PrintDecoderInfo(infile, outfile, enc_delay, aac_decoder_info);
+      PrintDecoderInfo(infile, outfile, encoder_delay, aac_decoder_info);
 
       ret = wav_writer->Open(outfile, aac_decoder_info.sample_rate,
                              aac_decoder_info.channels, 16);
@@ -103,7 +93,7 @@ static int32_t DecodeAacAdts(const char* infile,
         break;
       }
 
-      total_delay_in_bytes = enc_delay * aac_decoder_info.channels * 2;
+      total_delay_in_bytes = encoder_delay * aac_decoder_info.channels * 2;
       pcm_frame_size_in_bytes =
           aac_decoder_info.frame_length * aac_decoder_info.channels * 2;
     }
@@ -128,27 +118,44 @@ static int32_t DecodeAacAdts(const char* infile,
 }
 
 int main(int argc, char* argv[]) {
-  int32_t enc_delay = 0;
-  int32_t ch;
-  while ((ch = getopt(argc, argv, "hd:")) != -1) {
-    switch (ch) {
-      case 'd':
-        enc_delay = atoi(optarg);
-        break;
-      case 'h':
-      case '?':
-      default:
-        usage(argv[0]);
-        return -1;
+  args::ArgumentParser parser(
+      "Decode AAC with ADTS format to WAV file.\nOnly support 1 or 2 "
+      "channel(s)");
+  parser.helpParams.progindent = 0;
+  parser.helpParams.addDefault = true;
+  parser.helpParams.addChoices = true;
+  parser.helpParams.useValueNameOnce = true;
+
+  args::Positional<std::string> aac_file(parser, "Input", "AAC file",
+                                         args::Options::Required);
+  args::Positional<std::string> wav_file(parser, "Output", "WAV file",
+                                         args::Options::Required);
+  args::HelpFlag help(parser, "help", "Show usage and exit", {'h', "help"});
+  args::ValueFlag<int32_t> encoder_delay(
+      parser, "delay", "Encoder delay(samples/channel) to prune",
+      {'d', "delay"}, 0);
+
+  bool ret = parser.ParseCLI(argc, argv);
+  if (!ret) {
+    if (parser.GetError() != args::Error::None) {
+      std::cout << parser.GetErrorMsg() << std::endl << std::endl;
     }
+    std::cout << parser.Help();
+    return -1;
+  } else if (help.Get()) {
+    std::cout << parser.Help();
+    return 0;
   }
-  if (argc - optind < 2) {
-    usage(argv[0]);
+
+  if (aac_file.GetError() != args::Error::None) {
+    std::cout << aac_file.GetErrorMsg() << std::endl;
+    return -1;
+  } else if (wav_file.GetError() != args::Error::None) {
+    std::cout << wav_file.GetErrorMsg() << std::endl;
     return -1;
   }
-  const char* infile = argv[optind];
-  const char* outfile = argv[optind + 1];
 
-  DecodeAacAdts(infile, outfile, enc_delay);
+  DecodeAacAdts(aac_file.Get().c_str(), wav_file.Get().c_str(),
+                encoder_delay.Get());
   return 0;
 }
